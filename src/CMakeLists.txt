@@ -24,6 +24,10 @@ add_executable(${PROJECT_NAME}
       )
 target_compile_definitions(${PROJECT_NAME} PRIVATE
       CYW43_HOST_NAME=\"${CYW43_HOST_NAME}\"
+      USE_FLASH_SETTINGS
+#      USE_NO_SETTINGS
+      NDEBUG
+      LED_CONTROL
       )
 target_include_directories(${PROJECT_NAME} PRIVATE
       ${CMAKE_CURRENT_LIST_DIR}

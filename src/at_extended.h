@@ -200,13 +200,26 @@ char *displayAllSettings(char* atCmd) {
 // AT&W: update NVRAM from current settings
 //
 char *updateNvram(char *atCmd) {
-   writeSettings(&settings);
+   if( !atCmd[0] ) {
+      if( writeSettings(&settings) ) {
+	//printf("\r\nFLASH WRITE OK\r\n");
+         sendResult(R_OK);
+      } else {
+	//printf("\r\nFLASH WRITE ERROR\r\n");
+         sendResult(R_ERROR);
+      }
+   }
+   return atCmd;
+}
+#if 0
+char *updateNvram(char *atCmd) {
+  // writeSettings(&settings);
    if( !atCmd[0] ) {
       sendResult(R_OK);
    }
    return atCmd;
 }
-
+#endif
 //
 // AT&Zn? show contents of speed dial slot n
 // AT&Zn=host,alias set speed dial slot n

@@ -92,5 +92,9 @@
    uint16_t maxTxBuffLen = 0;
    err_t lastTcpWriteErr = ERR_OK;
 #endif
+#ifdef LED_CONTROL
+   volatile uint32_t txLedTimer = 0;
+   volatile uint32_t rxLedTimer = 0;
+#endif
 
 #endif

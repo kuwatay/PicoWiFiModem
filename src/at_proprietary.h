@@ -34,6 +34,9 @@ char *doAreYouThere(char *atCmd) {
    
    if( tcpIsConnected(tcpClient) && settings.telnet != NO_TELNET ) {
       state = ONLINE;
+#ifdef LED_CONTROL
+      gpio_put(LINK_LED, 1);
+#endif
       dtrWentInactive = false;
       bytesOut += tcpWriteBuf(tcpClient, areYouThere, sizeof areYouThere);
    } else {

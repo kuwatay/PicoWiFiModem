@@ -92,10 +92,19 @@
    #define TCP_CLIENT_RX_BUF_SIZE 20000
    #define TCP_CLIENT_TX_BUF_SIZE 1100
    
+#ifdef LED_CONTROL
+//   #define NDEBUG
+   #define WIFI_LED   10
+   #define LINK_LED   11
+   #define TX_LED     12
+   #define RX_LED     13
+#endif
+
 #ifndef NDEBUG
    #define POLL_STATE_LED 8
    #define RXBUFF_OVFL 9
    #define TXBUFF_OVFL 10
 #endif
+
 
 #endif

@@ -18,6 +18,9 @@ char *answerCall(char *atCmd) {
    gpio_put(DCD, ACTIVE); // we've got a carrier signal
    amClient = false;
    state = ONLINE;
+#ifdef LED_CONTROL
+   gpio_put(LINK_LED, 1);
+#endif
    uart_tx_wait_blocking(uart0); // drain the UART's Tx FIFO
    return atCmd;
 }
@@ -181,6 +184,9 @@ char *dialNumber(char *atCmd) {
          sendResult(R_CONNECT);
          gpio_put(DCD, ACTIVE);
          state = ONLINE;
+#ifdef LED_CONTROL
+	 gpio_put(LINK_LED, 1);
+#endif
          amClient = true;
       } else {
          sendResult(R_NO_CARRIER);
@@ -272,6 +278,9 @@ char *httpGet(char *atCmd) {
       gpio_put(DCD, ACTIVE);
       amClient = true;
       state = ONLINE;
+#ifdef LED_CONTROL
+      gpio_put(LINK_LED, 1);
+#endif
 
       // Send a HTTP request before continuing the connection as usual
       bytesOut += tcpWriteStr(tcpClient, "GET /");
@@ -539,6 +548,9 @@ char *doTelnetMode(char* atCmd) {
 char *goOnline(char *atCmd) {
    if( tcpIsConnected(tcpClient) ) {
       state = ONLINE;
+#ifdef LED_CONTROL
+      gpio_put(LINK_LED, 1);
+#endif
       dtrWentInactive = false;
       sendResult(R_CONNECT);
    } else {

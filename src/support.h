@@ -426,6 +426,9 @@ void endCall() {
    tcpClient = NULL;
    sendResult(R_NO_CARRIER);
    gpio_put(DCD, !ACTIVE);
+#ifdef LED_CONTROL
+   gpio_put(LINK_LED, 0);
+#endif
    connectTime = 0;
    escCount = 0;
 }
@@ -497,6 +500,9 @@ void checkForIncomingCall() {
          } else {
             sleep_ms(1000);
             state = ONLINE;
+#ifdef LED_CONTROL
+	    gpio_put(LINK_LED, 1);
+#endif
             amClient = false;
             dtrWentInactive = false;
             sendResult(R_CONNECT);
@@ -723,6 +729,9 @@ void inPasswordMode() {
                tcpWriteStr(tcpClient, "\r\nPassword: ");
             } else {
                state = ONLINE;
+#ifdef LED_CONTROL
+	       gpio_put(LINK_LED, 1);
+#endif
                amClient = false;;
                dtrWentInactive = false;
                sendResult(R_CONNECT);

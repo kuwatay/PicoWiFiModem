@@ -43,6 +43,15 @@
 
 #include "wifi_modem.h"
 #include "globals.h"
+
+#ifdef USE_FLASH_SETTINGS
+#include "flash_settings_impl.h"
+#elif defined(USE_NO_SETTINGS)
+#include "no_settings_impl.h"
+#else
+#include "eeprom_i2c_impl.h"
+#endif
+
 #include "eeprom.h"
 #include "tcp_support.h"
 #include "support.h"
@@ -56,6 +65,16 @@ void setup(void) {
 
    stdio_init_all();
 
+   // RC2014: UART0 only, no USB stdio
+   uart_init(uart0, 115200);
+   gpio_set_function(0, GPIO_FUNC_UART); // GP0 = UART0 TX
+   gpio_set_function(1, GPIO_FUNC_UART); // GP1 = UART0 RX
+   uart_set_format(uart0, 8, 1, UART_PARITY_NONE);
+   uart_set_hw_flow(uart0, false, false);
+   uart_set_translate_crlf(uart0, false);
+
+   initEEPROM();
+   
    gpio_init(DTR);
    gpio_set_dir(DTR, INPUT);
 
@@ -83,8 +102,29 @@ void setup(void) {
    gpio_set_dir(TXBUFF_OVFL, OUTPUT);
    gpio_put(TXBUFF_OVFL, LOW);
 #endif
+
+#ifdef LED_CONTROL
+   gpio_init(WIFI_LED);
+   gpio_set_dir(WIFI_LED, GPIO_OUT);
+   gpio_put(WIFI_LED, 0);
+
+   gpio_init(LINK_LED);
+   gpio_set_dir(LINK_LED, GPIO_OUT);
+   gpio_put(LINK_LED, 0);
+
+   gpio_init(TX_LED);
+   gpio_set_dir(TX_LED, GPIO_OUT);
+   gpio_put(TX_LED, 0);
+
+   gpio_init(RX_LED);
+   gpio_set_dir(RX_LED, GPIO_OUT);
+   gpio_put(RX_LED, 0);
+#endif
+
    initEEPROM();
-   readSettings(&settings);
+   if (!readSettings(&settings)) {
+     factoryDefaults(NULL);
+   }
 
    if( settings.magicNumber != MAGIC_NUMBER ) {
       // no valid data in EEPROM/NVRAM, populate with defaults
@@ -121,11 +161,18 @@ void setup(void) {
       for( int i = 0; i < 4; ++i ) {
          cyw43_arch_wifi_connect_timeout_ms(settings.ssid, settings.wifiPassword, CYW43_AUTH_WPA2_AES_PSK, 10000);
          if( cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) == CYW43_LINK_UP ) {
+#ifdef LED_CONTROL
+	   gpio_put(WIFI_LED, 1);
+#endif
             break;
          }
       }
+#ifdef LED_CONTROL
+      if ( cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) != CYW43_LINK_UP ) {
+	gpio_put(WIFI_LED, 0);
+      }
+#endif
    }
-
    if( settings.listenPort ) {
       tcpServerStart(&tcpServer, settings.listenPort);
    }
@@ -159,6 +206,15 @@ void setup(void) {
 // =============================================================
 void loop(void) {
 
+#ifdef LED_CONTROL
+   if( cyw43_tcpip_link_status(&cyw43_state,
+                               CYW43_ITF_STA) == CYW43_LINK_UP ) {
+      gpio_put(WIFI_LED, 1);
+   } else {
+      gpio_put(WIFI_LED, 0);
+   }
+#endif
+
    checkForIncomingCall();
 
    if( settings.dtrHandling == DTR_RESET && checkDtrIrq() ) {
@@ -190,6 +246,10 @@ void loop(void) {
       case ONLINE:
          if( uart_is_readable(uart0) ) {       // data from RS-232 to Wifi
             sendSerialData();
+#ifdef LED_CONTROL
+	    gpio_put(RX_LED, 1);
+	    rxLedTimer = time_us_32();
+#endif
          }
 
          while( tcpBytesAvailable(tcpClient) && !uart_is_readable(uart0) ) { 
@@ -197,6 +257,10 @@ void loop(void) {
             int c = receiveTcpData();
             if( c != -1 ) {
                uart_putc_raw(uart0, (char)c);
+#ifdef LED_CONTROL
+	       gpio_put(TX_LED, 1);
+	       txLedTimer = time_us_32();
+#endif
             }
          }
 
@@ -230,6 +294,19 @@ void loop(void) {
          }
          break;
    }
+
+#ifdef LED_CONTROL
+   if( gpio_get(TX_LED) &&
+       (time_us_32() - txLedTimer > 50000) ){
+     gpio_put(TX_LED, 0);
+   }
+
+   if( gpio_get(RX_LED) &&
+       (time_us_32() - rxLedTimer > 50000) ){
+     gpio_put(RX_LED, 0);
+   }
+#endif
+
 }
 
 // =============================================================
